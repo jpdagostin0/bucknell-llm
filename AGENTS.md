@@ -99,27 +99,7 @@ Implement or maintain the vault in this order:
 
 ## Current implementation state
 
-As of 2026-08-21:
-
-- The root vault scaffold, `Home.md`, `classes.md`, five templates, `inbox/`, and flat `attachments/` directory exist.
-- Obsidian's core Templates plugin uses `templates/`, and new attachments default to `attachments/`.
-- Course folders, class indexes, syllabus scaffolds, `notes/`, and `work/` exist for MATH 212, MATH 245, CSCI 204, ECEG 200, ECEG 210, and ECEG 241.
-- Each class index links to its corresponding Linear project. The six projects run from 2026-08-24 through 2026-12-18 and contain only a vault pointer.
-- The existing Linear team `JP's Workspace` currently represents Fall 2026. It still needs to be renamed to `Fall 2026` manually.
-- Linear has a team-scoped `Kind` label group with `pset`, `reading`, `lab`, `quiz`, `exam`, `course project`, `study`, and `admin`. Linear reserves the exact label name `project`, so `course project` is the canonical substitute.
-- MATH 212 and MATH 245 have imported instructor syllabi, stable course facts, retained Week 01 materials, and `Week-01.md` syntheses. Other `Syllabus.md` files remain catalog-linked scaffolds.
-- No full syllabus milestone or issue import has been performed. MATH 212 and MATH 245 Homework 01 exist as reviewed exceptions; import remaining obligations only after explicit syllabus review.
-- Weekly `Week NN` cycles and the `Submitted`, `Graded`, `Blocked`, `Excused`, and `Missed` statuses still require manual Linear configuration.
-- The four default Linear onboarding issues remain untouched.
-- `tools/moodle-dl/` provides an ignored, repository-local Moodle-DL runtime, and `skills/moodle-dl/` defines the corresponding agent workflow.
-- `tools/selenium/` provides an ignored, repository-local `mcp-server-selenium` runtime. `skills/selenium/` and `skills/fetch-webpage/` cover browser automation and non-Moodle page capture.
-- `tools/markitdown/` and `skills/markitdown/` provide local PDF extraction; `skills/sync-class/` composes both tools into the standard end-to-end class import.
-- `tools/pypdf/` and `skills/get-homework-pages/` extract the smallest cited textbook page range into ignored temporary output.
-- `skills/linear-sync/` defines ownership-preserving bidirectional synchronization between Linear obligations and retained Obsidian content.
-- Each skill has a `tools/fast-<skill>/` runner that performs the mechanical workflow without an LLM and reports remaining judgment as `needs_llm`.
-- PyMarkdown, Flint, and ls-lint are installed through repository-local wrappers. Flint carries the declarative frontmatter policy; `tools/vault-lint/validate_vault.py` enforces typed schemas, exact fields, scope, link resolution, and cross-note invariants that Flint cannot express. Negative controls run with every combined check.
-- MATH 212 and MATH 245 each have a course-level `textbooks/` directory linked from the class index and syllabus.
-- MATH 212 Homework 01 is Linear issue `JPS-6`; MATH 245 Homework 01 is `JPS-5`. Their Week 01 notes link back to the issues.
+Update this after bootstrapping.
 
 ## Frontmatter contracts
 
