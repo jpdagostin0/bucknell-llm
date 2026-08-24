@@ -1,0 +1,437 @@
+rules:
+  VAULT001:
+    level: error
+    description: "vault notes require a type"
+    required:
+      - type
+
+  VAULT002:
+    level: error
+    description: "Linear-owned mutable fields are forbidden in vault frontmatter"
+    disallowed:
+      - status
+      - due
+      - priority
+      - estimate
+
+  VAULT003:
+    level: error
+    description: "unknown vault note type"
+    enum:
+      values:
+        - assignment
+        - capture
+        - class
+        - dashboard
+        - schedule
+        - syllabus
+        - week
+      fields:
+        - type
+
+  HOME001:
+    level: error
+    description: "dashboard metadata is invalid"
+    required:
+      - title
+    enum:
+      values:
+        - dashboard
+      fields:
+        - type
+
+  SCHEDULE001:
+    level: error
+    description: "schedule metadata is invalid"
+    required:
+      - term
+    enum:
+      values:
+        - schedule
+      fields:
+        - type
+
+  CLASS001:
+    level: error
+    description: "class index metadata is incomplete"
+    required:
+      - code
+      - title
+      - credits
+      - meetings
+      - linear_project
+
+  CLASS002:
+    level: error
+    description: "class indexes must use type class"
+    enum:
+      values:
+        - class
+      fields:
+        - type
+
+  CLASS003:
+    level: error
+    description: "class code must match DEPT 000"
+    match:
+      re:
+        - '^[A-Z]{2,4} [0-9]{3}$'
+      fields:
+        - code
+
+  CLASS004:
+    level: error
+    description: "class Linear project must be an HTTPS Linear URL"
+    match:
+      re:
+        - '^https://linear\.app/.+$'
+      fields:
+        - linear_project
+
+  CLASS005:
+    level: error
+    description: "class content folder must be an HTTPS URL"
+    match:
+      re:
+        - '^https://[^ ]+$'
+      fields:
+        - content
+
+  CLASS006:
+    level: error
+    description: "class text metadata cannot be empty"
+    length:
+      min: 1
+      max: 300
+      fields:
+        - title
+        - instructor
+        - meetings
+
+  SYLLABUS001:
+    level: error
+    description: "syllabus metadata is incomplete"
+    required:
+      - class
+      - source
+
+  SYLLABUS002:
+    level: error
+    description: "syllabi must use type syllabus"
+    enum:
+      values:
+        - syllabus
+      fields:
+        - type
+
+  SYLLABUS003:
+    level: error
+    description: "syllabus class must be a path-qualified course-index wikilink"
+    match:
+      re:
+        - '^\[\[courses/[A-Z]{2,4}-[0-9]{3}(-[A-Za-z0-9]+)+-Fall-2026/[A-Z]{2,4}-[0-9]{3}\]\]$'
+      fields:
+        - class
+
+  SYLLABUS004:
+    level: error
+    description: "syllabus source must be an HTTPS URL or wikilink"
+    match:
+      re:
+        - '^(https://[^ ]+|\[\[[^][]+\]\])$'
+      fields:
+        - source
+
+  WEEK001:
+    level: error
+    description: "weekly note metadata is incomplete"
+    required:
+      - class
+      - week
+      - lectures
+      - unit
+
+  WEEK002:
+    level: error
+    description: "weekly notes must use type week"
+    enum:
+      values:
+        - week
+      fields:
+        - type
+
+  WEEK003:
+    level: error
+    description: "weekly note class must be a path-qualified course-index wikilink"
+    match:
+      re:
+        - '^\[\[courses/[A-Z]{2,4}-[0-9]{3}(-[A-Za-z0-9]+)+-Fall-2026/[A-Z]{2,4}-[0-9]{3}\]\]$'
+      fields:
+        - class
+
+  WEEK004:
+    level: error
+    description: "weekly unit cannot be empty"
+    length:
+      min: 1
+      max: 300
+      fields:
+        - unit
+
+  WORK001:
+    level: error
+    description: "work note metadata is incomplete"
+    required:
+      - linear
+      - class
+      - kind
+
+  WORK002:
+    level: error
+    description: "work notes must use type assignment"
+    enum:
+      values:
+        - assignment
+      fields:
+        - type
+
+  WORK003:
+    level: error
+    description: "work note Linear key is invalid"
+    match:
+      re:
+        - '^[A-Z][A-Z0-9]*-[0-9]+$'
+      fields:
+        - linear
+
+  WORK004:
+    level: error
+    description: "work note class must be a path-qualified course-index wikilink"
+    match:
+      re:
+        - '^\[\[courses/[A-Z]{2,4}-[0-9]{3}(-[A-Za-z0-9]+)+-Fall-2026/[A-Z]{2,4}-[0-9]{3}\]\]$'
+      fields:
+        - class
+
+  WORK005:
+    level: error
+    description: "work note kind is outside the fixed ontology"
+    enum:
+      values:
+        - pset
+        - reading
+        - lab
+        - quiz
+        - exam
+        - course project
+        - study
+        - admin
+      fields:
+        - kind
+
+  WORK006:
+    level: error
+    description: "work note Linear URL must be an HTTPS Linear URL"
+    match:
+      re:
+        - '^https://linear\.app/.+$'
+      fields:
+        - linear_url
+
+  WORK007:
+    level: error
+    description: "work note parent must be a path-qualified wikilink"
+    match:
+      re:
+        - '^\[\[[^][]+/[^][]+\]\]$'
+      fields:
+        - parent
+
+  WORK008:
+    level: error
+    description: "worked entries must be path-qualified wikilinks"
+    match:
+      re:
+        - '^\[\[[^][]+/[^][]+\]\]$'
+      fields:
+        - worked
+
+  CAPTURE001:
+    level: error
+    description: "inbox capture metadata is incomplete"
+    required:
+      - captured
+
+  CAPTURE002:
+    level: error
+    description: "inbox notes must use type capture"
+    enum:
+      values:
+        - capture
+      fields:
+        - type
+
+  CAPTURE003:
+    level: error
+    description: "capture date must use ISO format"
+    date:
+      format:
+        - "2006-01-02"
+        - "2006-01-02T15:04:05Z07:00"
+      fields:
+        - captured
+
+  CAPTURE004:
+    level: error
+    description: "capture class must be a path-qualified course-index wikilink"
+    match:
+      re:
+        - '^\[\[courses/[A-Z]{2,4}-[0-9]{3}(-[A-Za-z0-9]+)+-Fall-2026/[A-Z]{2,4}-[0-9]{3}\]\]$'
+      fields:
+        - class
+
+content:
+  # Flint 0.0.6 overwrites matches when a content block contains multiple
+  # path globs. Keep exactly one path per block until the upstream bug is fixed.
+  - name: Root dashboard
+    paths:
+      - Home.md
+    rules:
+      - VAULT001
+      - VAULT002
+      - VAULT003
+      - HOME001
+
+  - name: Root schedule
+    paths:
+      - classes.md
+    rules:
+      - VAULT001
+      - VAULT002
+      - VAULT003
+      - SCHEDULE001
+
+  - name: Inbox notes
+    paths:
+      - inbox/*.md
+    rules:
+      - VAULT001
+      - VAULT002
+      - VAULT003
+      - CAPTURE001
+      - CAPTURE002
+      - CAPTURE003
+      - CAPTURE004
+
+  - name: Course notes
+    paths:
+      - courses/**/*.md
+    rules:
+      - VAULT001
+      - VAULT002
+      - VAULT003
+
+  - name: Templates
+    paths:
+      - templates/*.md
+    rules:
+      - VAULT001
+      - VAULT002
+      - VAULT003
+
+  - name: Class indexes
+    paths:
+      - courses/*/[A-Z]*-[0-9][0-9][0-9].md
+    rules:
+      - CLASS001
+      - CLASS002
+      - CLASS003
+      - CLASS004
+      - CLASS005
+      - CLASS006
+
+  - name: Class index template
+    paths:
+      - templates/Class Index.md
+    rules:
+      - CLASS001
+      - CLASS002
+      - CLASS003
+      - CLASS004
+      - CLASS005
+      - CLASS006
+
+  - name: Syllabi
+    paths:
+      - courses/*/Syllabus.md
+    rules:
+      - SYLLABUS001
+      - SYLLABUS002
+      - SYLLABUS003
+      - SYLLABUS004
+
+  - name: Syllabus template
+    paths:
+      - templates/Syllabus.md
+    rules:
+      - SYLLABUS001
+      - SYLLABUS002
+      - SYLLABUS003
+      - SYLLABUS004
+
+  - name: Weekly notes
+    paths:
+      - courses/*/notes/Week-*.md
+    rules:
+      - WEEK001
+      - WEEK002
+      - WEEK003
+      - WEEK004
+
+  - name: Week template
+    paths:
+      - templates/Week.md
+    rules:
+      - WEEK001
+      - WEEK002
+      - WEEK003
+      - WEEK004
+
+  - name: Work notes
+    paths:
+      - courses/*/work/*.md
+    rules:
+      - WORK001
+      - WORK002
+      - WORK003
+      - WORK004
+      - WORK005
+      - WORK006
+      - WORK007
+      - WORK008
+
+  - name: Assignment template
+    paths:
+      - templates/Assignment.md
+    rules:
+      - WORK001
+      - WORK002
+      - WORK003
+      - WORK004
+      - WORK005
+      - WORK006
+      - WORK007
+      - WORK008
+
+  - name: Parent deliverable template
+    paths:
+      - templates/Parent Deliverable.md
+    rules:
+      - WORK001
+      - WORK002
+      - WORK003
+      - WORK004
+      - WORK005
+      - WORK006
+      - WORK007
+      - WORK008

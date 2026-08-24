@@ -1,0 +1,49 @@
+ls:
+  courses:
+    .dir: "regex:^(?:courses|[A-Z]{2,4}-[0-9]{3}(?:-[A-Za-z0-9]+)+-Fall-2026|notes|work|textbooks)$"
+
+  courses/*:
+    .md: "regex:^(?:[A-Z]{2,4}-[0-9]{3}|Syllabus)$"
+
+  courses/*/notes:
+    .md: "regex:^Week-[0-9]{2}$"
+
+  courses/*/work:
+    .md: "regex:^[A-Z]{2,4}-[0-9]{3} .+$"
+
+  courses/*/textbooks:
+    .pdf: "regex:^[A-Z]{2,4}-[0-9]{3} .+$"
+
+  attachments:
+    .*: "regex:^[A-Z]{2,4}-[0-9]{3} .+$"
+
+  inbox:
+    .md: "regex:^[^#|^\\[\\]:]+$"
+
+  templates:
+    .md: "regex:^(?:Assignment|Class Index|Parent Deliverable|Syllabus|Week)$"
+
+  tools:
+    .dir: "kebab-case | regex:^tools$"
+
+  tools/*:
+    .md: "regex:^README$"
+    .ps1: "kebab-case | regex:^install$"
+    .py: "snake_case"
+
+  skills:
+    .dir: "kebab-case | regex:^skills$"
+
+  skills/*:
+    .md: "regex:^(?:SKILL|reference)$"
+
+ignore:
+  - .git
+  - .obsidian
+  - attachments/.gitkeep
+  - "tools/**/.venv"
+  - "tools/**/bin"
+  - "tools/**/output"
+  - "tools/moodle-dl/state"
+  - "tools/**/state"
+  - "tools/**/node_modules"

@@ -1,0 +1,35 @@
+system:
+  exclude_path:
+    - ".obsidian/**"
+    - "tools/**/.venv/**"
+    - "tools/**/output/**"
+    - "tools/moodle-dl/state/**"
+    - "tools/**/state/**"
+    - "tools/**/node_modules/**"
+
+extensions:
+  front-matter:
+    enabled: true
+  markdown-tables:
+    enabled: true
+  strikethrough:
+    enabled: true
+  task-list-items:
+    enabled: true
+
+plugins:
+  # Obsidian prose is edited as semantic paragraphs rather than hard-wrapped text.
+  MD013:
+    enabled: false
+  # Repeated meeting-section headings are intentional in weekly course notes.
+  MD024:
+    enabled: false
+  # Obsidian uses both a frontmatter title and a rendered H1 in some notes.
+  MD025:
+    enabled: false
+  # Obsidian callouts may contain blank quoted lines.
+  MD028:
+    enabled: false
+  # Obsidian permits inline HTML when Markdown lacks an equivalent.
+  MD033:
+    enabled: false
