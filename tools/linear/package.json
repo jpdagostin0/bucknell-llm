@@ -1,0 +1,11 @@
+{
+  "name": "vault-linear-cli",
+  "private": true,
+  "version": "1.0.0",
+  "description": "MCP-compatible Linear CLI for the Fall 2026 vault.",
+  "main": "linear_cli.js",
+  "dependencies": {
+    "@linear/sdk": "91.0.0",
+    "yaml": "2.9.0"
+  }
+}
