@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import argparse
 import difflib
 import json
 import re
@@ -14,6 +13,9 @@ from gradescopeapi import DEFAULT_GRADESCOPE_BASE_URL
 from gradescopeapi.classes.account import Account
 from gradescopeapi.classes.connection import GSConnection
 from gradescopeapi.classes.upload import upload_assignment as library_upload
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "cli_args"))
+import cli_args
 
 CONFIG_KEYS = {
     "email",
@@ -158,60 +160,18 @@ def as_list(value: Any) -> list[Any]:
 
 
 def parse_flag_value(raw: str) -> Any:
-    text = raw.strip()
-    lowered = text.lower()
-    if lowered in {"true", "yes"}:
-        return True
-    if lowered in {"false", "no"}:
-        return False
-    if lowered in {"null", "none"}:
-        return None
-    if re.fullmatch(r"-?\d+", text):
-        return int(text)
-    if re.fullmatch(r"-?\d+\.\d+", text):
-        return float(text)
-    if text[:1] in "{[":
-        try:
-            return json.loads(text)
-        except json.JSONDecodeError:
-            return text
-    return text
+    return cli_args.parse_flag_value(raw)
 
 
 def parse_invocation(argv: list[str] | None = None) -> tuple[str, dict[str, Any]]:
-    parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("command", nargs="?", default="commands")
-    parser.add_argument("--json")
-    parser.add_argument("--json-file")
-    args, rest = parser.parse_known_args(argv)
-    payload: dict[str, Any] = {}
-    if args.json:
-        payload.update(json.loads(args.json))
-    elif args.json_file:
-        payload.update(json.loads(Path(args.json_file).read_text(encoding="utf-8")))
-    elif not sys.stdin.isatty():
-        raw = sys.stdin.read().strip()
-        if raw:
-            payload.update(json.loads(raw))
-    key: str | None = None
-    for token in rest:
-        if token in {"-h", "--help"}:
-            return "commands", {}
-        if token.startswith("--") and "=" in token:
-            name, value = token[2:].split("=", 1)
-            payload[name] = parse_flag_value(value)
-            key = None
-            continue
-        if token.startswith("--"):
-            key = token[2:]
-            continue
-        if key is None:
-            raise ToolError(f"Unexpected argument: {token}", "usage")
-        payload[key] = parse_flag_value(token)
-        key = None
-    if key is not None:
-        payload[key] = True
-    return str(args.command), payload
+    try:
+        return cli_args.parse_invocation(
+            argv,
+            default_command="commands",
+            error_class=ToolError,
+        )
+    except cli_args.CliError as error:
+        raise ToolError(error.message, error.code) from error
 
 
 def emit(payload: dict[str, Any], *, error: bool = False) -> None:
@@ -450,15 +410,10 @@ def run_cli(argv: list[str] | None = None) -> int:
                         "program": "gradescope",
                         "commands": sorted({"commands", *table}),
                         "invoke": [
-                            r".\tools\run-tool\run-tool.ps1 gradescope <command> [flags]",
-                            "python tools/run-tool/run_tool.py gradescope <command> [flags]",
+                            "python tools/run_tool/run_tool.py gradescope commands",
+                            "python tools/run_tool/run_tool.py gradescope get_courses",
+                            "Always use flags. Never write scratch files.",
                         ],
-                        "shell": "powershell",
-                        "rule": (
-                            "Use Windows PowerShell or a real python.exe. "
-                            "Do not wrap PowerShell cmdlets in bash -c. "
-                            "Do not use pyodide or any emulated interpreter."
-                        ),
                     },
                 }
             )
@@ -470,7 +425,9 @@ def run_cli(argv: list[str] | None = None) -> int:
             close = difflib.get_close_matches(str(command or ""), known, n=3, cutoff=0.5)
             if close:
                 message += f" Did you mean {', '.join(close)}?"
-            message += " Discover commands with `commands` or `--help`."
+            message += (
+                ' Example: python tools/run_tool/run_tool.py gradescope get_courses'
+            )
             raise ToolError(message, "usage")
         emit({"ok": True, "command": command, "data": handler(payload)})
         return 0

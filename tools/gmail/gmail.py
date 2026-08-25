@@ -327,21 +327,13 @@ def commands() -> dict[str, Any]:
     }
 
 
-USAGE = {
-    "search_threads": "search_threads --query \"is:unread newer_than:7d\" [--pageSize 10]",
-    "get_thread": "get_thread --threadId THREAD_ID",
-    "get_message": "get_message --messageId MESSAGE_ID",
-    "list_labels": "list_labels",
-    "list_drafts": "list_drafts",
-    "create_draft": "create_draft --to email --subject text --body text",
-    "send_message": "send_message --to email --subject text --body text",
-    "reply": "reply --threadId THREAD_ID --body text",
-}
-
-
 def main() -> int:
     os.environ.setdefault("OAUTHLIB_RELAX_TOKEN_SCOPE", "1")
-    return run_cli("gmail", commands(), usage=USAGE)
+    return run_cli(
+        "gmail",
+        commands(),
+        example='search_threads --query "is:unread newer_than:7d" --pageSize 10',
+    )
 
 
 if __name__ == "__main__":

@@ -27,7 +27,12 @@ class SeleniumRoutingTests(unittest.TestCase):
 
     def test_chrome_missing_error_is_explicit(self) -> None:
         hint = tool.chrome_hint(FileNotFoundError(2, "The system cannot find the file specified"))
-        self.assertIn("Chrome was not found", hint)
+        self.assertIn("Helium", hint)
+
+    def test_helium_is_preferred_browser_candidate(self) -> None:
+        first = tool.browser_candidates()[0]
+        self.assertEqual(first, tool.DEFAULT_HELIUM)
+        self.assertTrue(str(first).endswith("imput\\Helium\\Application\\chrome.exe") or "Helium" in str(first))
 
     def test_page_slug_is_filename_safe(self) -> None:
         slug = tool.page_slug("https://example.com/path/to/page?q=1")
@@ -43,6 +48,8 @@ class SeleniumRoutingTests(unittest.TestCase):
         payload = json.loads(stdout.getvalue())
         self.assertIn("fetch", payload["data"]["commands"])
         self.assertIn("navigate", payload["data"]["commands"])
+        self.assertEqual(len(payload["data"]["invoke"]), 3)
+        self.assertIn("run_tool.py selenium commands", payload["data"]["invoke"][0])
 
 
 if __name__ == "__main__":

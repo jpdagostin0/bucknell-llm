@@ -4,26 +4,15 @@ type: tool
 
 # Linear
 
-Repository-local [@linear/sdk](https://github.com/linear/linear) wrapper with an MCP-compatible JSON CLI. The personal API key lives in ignored `.env.yml`.
+Always:
 
-## Install
-
-```powershell
-.\tools\linear\install.ps1
+```text
+python tools/run_tool/run_tool.py linear commands
+python tools/run_tool/run_tool.py linear list_issues --cycle current
+python tools/run_tool/run_tool.py linear current_cycle_issues
+python tools/run_tool/run_tool.py linear all_issues
+python tools/run_tool/run_tool.py linear now
+python tools/run_tool/run_tool.py linear get_issue --id JPS-5
 ```
 
-Fill `linear.api_key` in `.env.yml` before calling mutating or authenticated commands.
-
-## Commands
-
-Command names match Linear MCP tools used by this vault. Inspect current data before creating or changing issues.
-
-```powershell
-.\tools\linear\linear.ps1 commands
-.\tools\linear\linear.ps1 ping
-.\tools\linear\linear.ps1 list_teams
-.\tools\linear\linear.ps1 list_issues --limit 10 --team JPS
-.\tools\linear\linear.ps1 get_issue --id JPS-5
-```
-
-Keep due dates, status, priority, and estimates in Linear. Vault notes join issues with `linear` and `linear_url` only.
+`--cycle` accepts `current`, `next`, `previous`, a week number, `Week NN`, or a cycle id. Read JSON from stdout. Never write a scratch file. Spoken `MATH 212` is `--class "MATH 212"`. Never open `MATH 212.md`.

@@ -4,31 +4,11 @@ type: tool
 
 # pypdf
 
-Repository-local page extraction wrapper for [pypdf](https://github.com/py-pdf/pypdf), pinned to `6.16.1`.
+Always:
 
-## Install
-
-```powershell
-.\tools\pypdf\install.ps1
+```text
+python tools/run_tool/run_tool.py fast_get_homework_pages commands
+python tools/run_tool/run_tool.py fast_get_homework_pages --class "MATH 212"
 ```
 
-The installer uses `uv` and does not clone or vendor the upstream repository.
-
-## Inspect page labels
-
-```powershell
-.\tools\pypdf\extract-pages.ps1 ".\course-textbook.pdf" --list-labels
-```
-
-## Extract printed textbook pages
-
-```powershell
-.\tools\pypdf\extract-pages.ps1 `
-  ".\course-textbook.pdf" `
-  ".\tools\pypdf\output\homework-pages.pdf" `
-  --printed-pages "5-6"
-```
-
-Use `--pages "12-13"` for one-based physical PDF pages when printed labels are missing or ambiguous. `--find-section "1.1"` prints printed labels whose page text contains that section heading.
-
-The tool refuses to overwrite existing output. Temporary extractions belong in ignored `output/`; retain an extraction only when it is useful beyond the immediate homework session.
+Read JSON from stdout. Never write a scratch file. Spoken `MATH 212` is `--class "MATH 212"`. Never open `MATH 212.md`.

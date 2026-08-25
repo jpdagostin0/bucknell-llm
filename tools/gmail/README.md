@@ -4,24 +4,11 @@ type: tool
 
 # Gmail
 
-Repository-local [simplegmail](https://github.com/jeremyephron/simplegmail) wrapper with an MCP-compatible JSON CLI. Shares Google OAuth secrets with Drive and Calendar via `.env.yml`.
+Always:
 
-## Install
-
-```powershell
-.\tools\google-auth\install.ps1
-.\tools\gmail\install.ps1
+```text
+python tools/run_tool/run_tool.py gmail commands
+python tools/run_tool/run_tool.py gmail search_threads --query "is:unread newer_than:7d" --pageSize 10
 ```
 
-Fill `.env.yml`, then run `.\tools\google-auth\google-auth.ps1 login`.
-
-## Commands
-
-```powershell
-.\tools\gmail\gmail.ps1 commands
-.\tools\gmail\gmail.ps1 ping
-.\tools\gmail\gmail.ps1 search_threads --query "is:unread newer_than:7d" --pageSize 10
-.\tools\gmail\gmail.ps1 list_labels
-```
-
-Do not send, reply, trash, or label mail unless the user asked for that mutation.
+Read JSON from stdout. Never write a scratch file. Spoken `MATH 212` is `--class "MATH 212"`. Never open `MATH 212.md`.

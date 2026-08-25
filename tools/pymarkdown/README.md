@@ -1,20 +1,14 @@
+---
+type: tool
+---
+
 # PyMarkdown
 
-Repository-local [PyMarkdown](https://github.com/jackdewinter/pymarkdown) installation for checking and mechanically formatting Markdown.
+Always:
 
-## Install
-
-```powershell
-.\tools\pymarkdown\install.ps1
+```text
+python tools/run_tool/run_tool.py fast_check_vault commands
+python tools/run_tool/run_tool.py fast_check_vault
 ```
 
-The installer uses `uv` and keeps the environment under ignored `.venv/`.
-
-## Run
-
-```powershell
-.\tools\pymarkdown\pymarkdown.ps1 --config .pymarkdown.yml scan --recurse --respect-gitignore .
-.\tools\pymarkdown\pymarkdown.ps1 --config .pymarkdown.yml fix --recurse --respect-gitignore .
-```
-
-The root `.pymarkdown.yml` enables Obsidian-compatible frontmatter and Markdown extensions.
+Read JSON from stdout. Never write a scratch file. Spoken `MATH 212` is `--class "MATH 212"`. Never open `MATH 212.md`.

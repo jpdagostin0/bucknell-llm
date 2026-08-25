@@ -1,1 +1,19 @@
 .env.yml
+__pycache__/
+.venv/
+*.pyc
+node_modules/
+
+# Tool secrets, runtime, and generated output
+tools/google_auth/state/
+tools/moodle_dl/state/
+tools/linear/state/
+tools/selenium/state/
+tools/selenium/output/
+tools/google_drive/output/
+tools/markitdown/output/
+tools/pypdf/output/
+tools/ls_lint/bin/
+tools/flint/bin/
+tools/flint/*.zip
+tools/**/__pycache__/*.pyc

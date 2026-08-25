@@ -1,16 +1,20 @@
 from __future__ import annotations
 
-import argparse
 import inspect
 import json
+import os
 import re
 import sys
 from pathlib import Path
 from typing import Any, Callable
 from urllib.parse import urlparse
 
+sys.path.insert(0, str(Path(__file__).resolve().parents[1] / "cli_args"))
+import cli_args
+
 TEXT_LIMIT = 20000
 DEFAULT_PORT = 9222
+DEFAULT_HELIUM = Path(r"C:\Program Files\imput\Helium\Application\chrome.exe")
 COMPACT_COMMANDS = (
     "tabs",
     "navigate",
@@ -49,56 +53,18 @@ def output_dir() -> Path:
 
 
 def parse_flag_value(raw: str) -> Any:
-    text = str(raw).strip()
-    lowered = text.lower()
-    if lowered in {"true", "yes"}:
-        return True
-    if lowered in {"false", "no"}:
-        return False
-    if lowered in {"null", "none"}:
-        return None
-    if text.startswith("{") or text.startswith("["):
-        try:
-            return json.loads(text)
-        except json.JSONDecodeError:
-            return text
-    try:
-        return json.loads(text)
-    except json.JSONDecodeError:
-        return text
+    return cli_args.parse_flag_value(raw)
 
 
 def parse_invocation(argv: list[str] | None = None) -> tuple[str, dict[str, Any]]:
-    argv = list(sys.argv[1:] if argv is None else argv)
-    if not argv or argv[0] in {"-h", "--help", "help", "commands", "--list"}:
-        return "commands", {}
-    parser = argparse.ArgumentParser(add_help=False)
-    parser.add_argument("command", nargs="?", default="ping")
-    parser.add_argument("--json")
-    parser.add_argument("--json-file")
-    parsed, rest = parser.parse_known_args(argv)
-    payload: dict[str, Any] = {}
-    if parsed.json:
-        payload.update(json.loads(parsed.json))
-    if parsed.json_file:
-        payload.update(json.loads(Path(parsed.json_file).read_text(encoding="utf-8")))
-    key: str | None = None
-    for token in rest:
-        if token.startswith("--") and "=" in token:
-            name, value = token[2:].split("=", 1)
-            payload[name] = parse_flag_value(value)
-            key = None
-            continue
-        if token.startswith("--"):
-            key = token[2:]
-            continue
-        if key is None:
-            raise ToolError(f"Unexpected argument: {token}", "usage")
-        payload[key] = parse_flag_value(token)
-        key = None
-    if key is not None:
-        payload[key] = True
-    return str(parsed.command), payload
+    try:
+        return cli_args.parse_invocation(
+            argv,
+            default_command="ping",
+            error_class=ToolError,
+        )
+    except cli_args.CliError as error:
+        raise ToolError(error.message, error.code) from error
 
 
 def chrome_hint(error: Exception) -> str:
@@ -106,10 +72,49 @@ def chrome_hint(error: Exception) -> str:
     lowered = text.lower()
     if "winerror 2" in lowered or "cannot find the file specified" in lowered:
         return (
-            "Chrome was not found. Install Google Chrome and ensure chrome.exe is "
-            "on PATH, then retry. Selenium does not use Moodle-DL."
+            "No Chromium browser was found. Expected Helium at "
+            f"{DEFAULT_HELIUM}. Pass --binary or set HELIUM_BROWSER."
         )
     return text
+
+
+def browser_candidates(explicit: str | None = None) -> list[Path]:
+    paths: list[Path] = []
+    if explicit:
+        paths.append(Path(explicit))
+    env = os.environ.get("HELIUM_BROWSER") or os.environ.get("CHROME_BINARY")
+    if env:
+        paths.append(Path(env))
+    program_files = Path(os.environ.get("PROGRAMFILES", r"C:\Program Files"))
+    local_app = Path(os.environ.get("LOCALAPPDATA", ""))
+    paths.extend(
+        [
+            DEFAULT_HELIUM,
+            program_files / "imput" / "Helium" / "Application" / "chrome.exe",
+            program_files / "Google" / "Chrome" / "Application" / "chrome.exe",
+            local_app / "Google" / "Chrome" / "Application" / "chrome.exe",
+        ]
+    )
+    seen: set[str] = set()
+    unique: list[Path] = []
+    for path in paths:
+        key = str(path).lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        unique.append(path)
+    return unique
+
+
+def find_browser_binary(explicit: str | None = None) -> Path:
+    for path in browser_candidates(explicit):
+        if path.is_file():
+            return path
+    raise ToolError(
+        "No Chromium browser was found. Expected Helium at "
+        f"{DEFAULT_HELIUM}. Pass --binary or set HELIUM_BROWSER.",
+        "tool",
+    )
 
 
 def emit(payload: dict[str, Any], *, error: bool = False) -> None:
@@ -141,7 +146,7 @@ def require_http_url(url: str) -> str:
     normalized = raw if "://" in raw else f"https://{raw}"
     if is_moodle_url(normalized):
         raise ToolError(
-            "This URL's host starts with moodle. Use moodle-dl, not Selenium.",
+            "This URL's host starts with moodle. Use fast_moodle_dl, not Selenium.",
             "routing",
         )
     return normalized
@@ -168,6 +173,8 @@ def filter_kwargs(fn: Callable[..., Any], payload: dict[str, Any]) -> dict[str, 
         "quit",
         "screenshot",
         "include_html",
+        "binary",
+        "headless",
         "name",
         "class",
         "course",
@@ -199,6 +206,61 @@ def decode_result(raw: Any) -> Any:
     return raw
 
 
+class VaultDriver:
+    def __init__(self, driver: Any) -> None:
+        self.driver = driver
+
+    def ensure_driver_initialized(self) -> Any:
+        return self.driver
+
+    def _recover_window_handle(self) -> None:
+        driver = self.driver
+        if driver is None:
+            return
+        try:
+            _ = driver.title
+            return
+        except Exception:
+            pass
+        handles = list(getattr(driver, "window_handles", []) or [])
+        if handles:
+            driver.switch_to.window(handles[-1])
+
+    def quit(self) -> None:
+        if self.driver is None:
+            return
+        try:
+            self.driver.quit()
+        finally:
+            self.driver = None
+
+
+def start_webdriver(payload: dict[str, Any]) -> Any:
+    from selenium import webdriver
+    from selenium.webdriver.chrome.options import Options
+
+    binary = find_browser_binary(
+        str(payload["binary"]) if payload.get("binary") else None
+    )
+    data_dir = Path(str(payload.get("user_data_dir") or (state_dir() / "chrome-profile")))
+    data_dir.mkdir(parents=True, exist_ok=True)
+    options = Options()
+    options.binary_location = str(binary)
+    options.add_argument(f"--user-data-dir={data_dir}")
+    options.add_argument("--remote-allow-origins=*")
+    options.add_argument("--no-first-run")
+    options.add_argument("--no-default-browser-check")
+    options.add_argument("--disable-dev-shm-usage")
+    headless = payload.get("headless")
+    if headless is True or str(headless).strip().lower() in {"true", "yes", "1"}:
+        options.add_argument("--headless=new")
+    driver = webdriver.Chrome(options=options)
+    driver.set_page_load_timeout(120)
+    driver.set_script_timeout(120)
+    driver._vault_browser = str(binary)
+    return driver
+
+
 def ensure_output_dirs() -> None:
     for path in (
         state_dir(),
@@ -220,20 +282,32 @@ def ensure_session(payload: dict[str, Any] | None = None) -> Any:
     data_dir.mkdir(parents=True, exist_ok=True)
     server.user_data_dir = str(data_dir)
     server.debug_port = int(payload.get("port") or DEFAULT_PORT)
-    if payload.get("profile"):
-        server.profile = str(payload["profile"])
-    if payload.get("driver"):
-        server.driver_type = str(payload["driver"])
     server.download_directory = output_dir() / "downloads"
-    if server.driver_instance is None:
-        server.initialize_driver_instance()
+    attached = getattr(server.driver_instance, "driver", None)
+    if attached is None:
+        driver = start_webdriver(payload)
+        server.driver_instance = VaultDriver(driver)
+        configure = getattr(server, "configure_download_directory", None)
+        if callable(configure):
+            configure(driver)
     return server.ensure_driver_initialized()
 
 
 def compact_fns() -> dict[str, Callable[..., Any]]:
-    from mcp_server_selenium.tools import compact
+    try:
+        from mcp_server_selenium.tools import compact
 
-    return {name: getattr(compact, name) for name in COMPACT_COMMANDS}
+        return {name: getattr(compact, name) for name in COMPACT_COMMANDS}
+    except ImportError:
+        from mcp_server_selenium.tools import navigate, page_ready, screenshot, script, tabs
+
+        return {
+            "tabs": tabs.list_tabs,
+            "navigate": navigate.navigate,
+            "wait_for": page_ready.check_page_ready,
+            "take_screenshot": screenshot.take_screenshot,
+            "run_javascript": script.run_javascript_in_console,
+        }
 
 
 def compact_call(name: str, payload: dict[str, Any]) -> Any:
@@ -249,14 +323,19 @@ def compact_call(name: str, payload: dict[str, Any]) -> Any:
 
 
 def ping(_: dict[str, Any]) -> dict[str, Any]:
-    import mcp_server_selenium
-
+    try:
+        binary = str(find_browser_binary())
+        browser_ok = True
+    except ToolError:
+        binary = str(DEFAULT_HELIUM)
+        browser_ok = False
     return {
         "ok": True,
         "tool": "selenium",
-        "package": "mcp-server-selenium",
-        "module": mcp_server_selenium.__name__,
-        "chrome": "required",
+        "driver": "helium",
+        "browser": binary,
+        "browser_found": browser_ok,
+        "engine": "helium" if "Helium" in binary else "chromium",
     }
 
 
@@ -284,12 +363,17 @@ def fetch(payload: dict[str, Any]) -> dict[str, Any]:
     include_html = payload.get("include_html", True)
     screenshot = payload.get("screenshot", True)
     slug = page_slug(url, payload.get("name") if isinstance(payload.get("name"), str) else None)
+    if payload.get("headless") is None:
+        payload = {**payload, "headless": True}
     driver = ensure_session(payload)
-    from mcp_server_selenium.tools.compact import navigate, take_screenshot
-
-    navigation = decode_result(
-        navigate(url=url, wait_until=wait_until, timeout=timeout)
-    )
+    driver.set_page_load_timeout(timeout)
+    driver.get(url)
+    navigation = {
+        "ok": True,
+        "requested_url": url,
+        "wait_until": wait_until,
+        "browser": getattr(driver, "_vault_browser", None),
+    }
     title = str(getattr(driver, "title", "") or "")
     final_url = str(getattr(driver, "current_url", "") or url)
     text = str(driver.execute_script("return document.body ? document.body.innerText : '';") or "")
@@ -304,13 +388,11 @@ def fetch(payload: dict[str, Any]) -> dict[str, Any]:
         html_path.write_text(html, encoding="utf-8")
     screenshot_result = None
     if screenshot is not False:
-        screenshot_result = decode_result(
-            take_screenshot(
-                file_name=slug,
-                directory=str(output_dir() / "screenshots"),
-                mode=str(payload.get("mode") or "viewport"),
-            )
-        )
+        shot_dir = output_dir() / "screenshots"
+        shot_dir.mkdir(parents=True, exist_ok=True)
+        shot_path = shot_dir / f"{slug}.png"
+        driver.save_screenshot(str(shot_path))
+        screenshot_result = {"path": str(shot_path)}
     if payload.get("quit"):
         stop({})
     return {
@@ -324,12 +406,14 @@ def fetch(payload: dict[str, Any]) -> dict[str, Any]:
         "text_path": str(text_path),
         "html_path": str(html_path) if html_path else None,
         "screenshot": screenshot_result,
+        "browser": getattr(driver, "_vault_browser", None),
         "moodle": False,
     }
 
 
 def commands(_: dict[str, Any]) -> dict[str, Any]:
     return {
+        "program": "selenium",
         "commands": [
             "commands",
             "ping",
@@ -338,11 +422,11 @@ def commands(_: dict[str, Any]) -> dict[str, Any]:
             "fetch",
             *COMPACT_COMMANDS,
         ],
-        "package": "mcp-server-selenium==0.1.8",
-        "routing": (
-            "If a URL's host does not start with moodle, do not use moodle-dl. "
-            "Use selenium fetch instead."
-        ),
+        "invoke": [
+            "python tools/run_tool/run_tool.py selenium commands",
+            'python tools/run_tool/run_tool.py selenium fetch --url "https://example.com"',
+            "Always use flags. Never write scratch files.",
+        ],
     }
 
 
@@ -367,7 +451,7 @@ def main(argv: list[str] | None = None) -> int:
             known = sorted({"commands", *HANDLERS, *COMPACT_COMMANDS})
             raise ToolError(
                 f"Unknown command: {command}. Known: {', '.join(known)}. "
-                "Discover commands with `commands` or `--help`.",
+                'Example: python tools/run_tool/run_tool.py selenium fetch --url "https://example.com"',
                 "usage",
             )
         data = handler(payload)
